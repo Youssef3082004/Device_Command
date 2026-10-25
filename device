@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+
+function CPU(){
+    idle=$(top -b -n 1 | grep '%Cpu(s):' | grep -oE '[0-9]+\.[0-9]+' | sed -n '4p')
+    CPU=$(echo "100 - $idle" | bc)
+    echo "CPU Usage: $CPU%"
+}
+
+function Memory(){
+    RAM=$(top -b -n 1 | grep "MiB Mem" | grep -oE '[0-9]+\.[0-9]+' | sed -n '1p')
+    free=$(top -b -n 1 | grep "MiB Mem" | grep -oE '[0-9]+\.[0-9]+' | sed -n '2p')
+    memory=$(echo "(($RAM / 1024) - ($free / 1024)) / 15 * 100 " | bc -l | cut -c 1-5)
+    echo "Memory Usage: $memory%"
+} 
+
+function AverageDisk (){
+    n_of_disks=$(expr $(df -h | wc -l) - 1)
+    disks=$(df -h | awk '{print $5}' | grep -oE '[0-9]+')
+    sum=$(echo $disks | tr ' ' '+' | bc -l)
+    formula=$(echo "($sum / (100 * $n_of_disks)) * 100" | bc -l | cut -c 1-5)
+
+    echo "Average Disk Usage: $formula%"
+
+}
+
+function DiskUsage(){
+    size=$(df -P | awk '{print $2}' | grep -oE '[0-9]+')
+    used=$(df -P | awk '{print $3}' | grep -oE '[0-9]+')
+    sumsize=$(echo $size | tr ' ' '+' | bc -l)
+    sumused=$(echo $used | tr ' ' '+' | bc -l)
+
+    formula=$(echo "($sumused / $sumsize) * 100" | bc -l | cut -c 1-5)
+    echo "Disk Usage: $formula%"
+}
+
+echo "USERNAME: $USERNAME"
+echo "HOSTNAME: $HOSTNAME"
+CPU
+Memory
+AverageDisk
+DiskUsage
+echo "UpTime: $(uptime -p | cut -f 2- -d " ")"
